@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <title> Projet MongoDB </title>
+
+  </head>
+
+  <body>
+<!-- En‑tête principale -->
+    <header>
+      <h1>Projet MongoDB</h1>
+    </header>
+
+    <nav>
+      <ul>
+        <li><a href="#"> Centres de vaccination Covid19 </a></li>
+        <li><a href="#"> Réseau de publications scientifiques </a></li>
+        <li><a href="#"> Visualisation libre de données issues de NYfood </a></li>
+        <li><a href="#"> Visualisation supplémentaire (groupe de 3) </a></li>
+      </ul>
+
+     </nav>
+
+<!-- Corps du site web -->
+
+    <main>
+      <article>
+        <h2> Enoncés des exercices (<a href="https://rtavenar.github.io/teaching/nosql_fiche/html/projet_visu_groupe_de_3.html">lien ici</a>)</h2>
+
+        <h3> Centres de vaccination Covid19 </h3>
+        <p>La base doctolib contient des informations (récupérées en janvier 2022) relatives aux centres de vaccination contre la Covid19 en Bretagne. Vous devrez pour cette première visualisation générer une carte des centres de vaccination situés à moins de 50km de Rennes. L’icône associée à chaque centre sera de couleur rouge, orange ou vert selon le nombre de créneaux de vaccination ouverts sur la période du 26 au 29 janvier 2022 (inclus).</p>
+        
+        <h3> Réseau de publications scientifiques </h3>
+        <p>La base publications contient les informations relatives aux publications de scientifiques du laboratoire IRISA pour l’année 2021 (extraites du service HAL). Visualisez les liens entre les auteurs de ces publications, en utilisant un code couleur qui permette de distinguer les auteurs par leurs nombres de publications et en représentant les liens (co-publications) existant entre les auteurs. Le nombre d’auteurs présents dans la base étant très grand, vous vous focaliserez sur les 20 auteurs les plus prolifiques (i.e. qui ont participé à l’écriture du plus grand nombre d’articles) et votre requête MongoDB devra récupérer pour chacun de ces auteurs la liste de ses publications (la suite du traitement qui consiste à calculer le nombre d’articles commun par paire d’auteurs pourra être réalisée dans votre script).</p>
+
+        <h3> Visualisation libre de données issues de NYfood </h3>
+        <p>La base NYfood contient des informations relatives à des restaurants de New-York. Pour ce troisième exercice, vous êtes libres de visualiser les données contenues dans cette base comme bon vous semble.</p>
+        
+        <h3> Visualisation supplémentaire (groupe de 3) </h3>
+        <p>Dans le cas d’un groupe de 3 étudiants, vous avez une visualisation supplémentaire à faire, dont voici les instructions. La base elections_rennes contient les informations relatives aux élections municipales de 2020 à Rennes. En vous basant sur les polygones de définition des centres de votes disponibles <a href="https://data.rennesmetropole.fr/explore/dataset/perimetres_centres_vote_2014/download/?format=json&timezone=Europe/Berlin&lang=fr"> ici</a>, proposez une visualisation qui place sur une carte les différents bureaux de vote, indique par un code couleur le taux de participation des bureaux de vote, et indique au survol de chaque centre de vote (représenté par un polygone, donc) les totaux des nombre de voix pour chaque candidat (additionnés sur tous les bureaux de vote du centre).</p>
+        
+      </article>
+      <br>
+
+    </main>
+
+    <!-- Pied de page utilisé sur toutes les pages du site -->
+    <footer>
+      <p> Travail réalisé par Enora Bretel, Clémence Veillé et Toinon Boutaud de la Combe</p>
+    </footer>
+
+  </body>
+    <!-- Brève mise en page -->
+  <style>
+    h3 {
+      background-color: #7a95a7;
+      color: #07435a;
+      padding: 16px;
+      font-family: Calibri;
+    }
+    p, h1, h2, h3, nav, header{
+        font-family: Calibri;
+    }
+    p {
+        text-align: center, justify;
+    }
+
+    h1, h2{
+        text-align: center;
+        color: #07435a;
+    }
+  </style>
+
+</html>
