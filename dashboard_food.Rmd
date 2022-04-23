@@ -1,0 +1,139 @@
+---
+title: " Visualisation libre de données issues de NYfood"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+##Script R de base
+
+########################## package utiliser  ###############################
+library(mongolite)
+library(jsonlite)
+library(tidyr)
+library(dplyr)
+library(leaflet)
+######################## Partie requête mongodb ###############################
+
+url="mongodb://etudiant:ur2@clusterm1-shard-00-00.0rm7t.mongodb.net:27017,clusterm1-shard-00-01.0rm7t.mongodb.net:27017,clusterm1-shard-00-02.0rm7t.mongodb.net:27017/?ssl=true&replicaSet=atlas-l4xi61-shard-0"
+
+food <- mongo(collection="NYfood", db="food",
+            url=url,
+            verbose=TRUE)
+#print(food$find())
+
+
+## requete resto et localisation
+req_resto='[
+    {"$match":
+            {"cuisine":"Bakery"}},
+    {"$unwind":"$grades"},
+    {"$match": {"grades.date":{"$gte": {"$date":"2014-01-01T00:00:00Z"}, "$lt": {"$date":"2015-01-01T00:00:00Z"}}}},
+    {"$group": {"_id": "$restaurant_id",
+              "moyenne_score" : {"$avg":"$grades.score"},
+              "nom" : {"$addToSet":"$name"},
+              "loc" : {"$addToSet":"$address.loc.coordinates"}
+        }}        
+]'
+
+df_resto=food$aggregate(req_resto)
+#View(df_resto)
+
+
+# requete notes des restaurants
+req_stat_notes='[
+    {"$match":
+            {"cuisine":"Bakery"}},
+    {"$unwind":"$grades"},
+    {"$match": {"grades.date":{"$gte": {"$date":"2014-01-01T00:00:00Z"}, "$lt": {"$date":"2015-01-01T00:00:00Z"}}}},
+    {"$group": {"_id": "$name",
+              "score_min": {"$min":"$grades.score"},
+              "score_moyen" : {"$avg":"$grades.score"},
+              "score_max": {"$max":"$grades.score"},
+              "score" : {"$addToSet":"$grades.score"}
+        }},
+     {"$project": {"n_notes" : {"$size" : "$score"},"score_min":"$score_min","score_moyen":"$score_moyen","score_max":"$score_max"}}
+]'
+
+df_stat_notes=food$aggregate(req_stat_notes)
+colnames(df_stat_notes)=c("nom","nb_notes","note_minimal",'note_moyenne','note_maximal')
+#View(df_stat_notes)
+
+
+
+
+
+### changement dans le tableau bureau pour avoir lat et lon dans une colonne séparer
+longitude = c()
+latitude = c()
+for (i in (1:654)){
+  longitude = c(longitude,df_resto$loc[[i]][,1])
+  latitude = c(latitude,df_resto$loc[[i]][,2])
+}
+df_resto = cbind(df_resto,longitude,latitude) 
+#View(df_resto)
+df_total=merge(df_stat_notes,df_resto,by="nom")
+
+
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Graphique représentant les boulangeries présentent aux Etats-Unis qui reçu une note en 2014
+
+```{r}
+###################################### Partie cartographie ##################################################
+
+##### fonction permettant de gérer la couleur en fonction du taux de participation
+getColor <- function(df_total) {
+  sapply(df_total$moyenne_score, function(moyenne_score) {
+  if(is.na(moyenne_score)){
+      "black"
+  }
+  else{
+    if(moyenne_score > quantile(df_total$moyenne_score,2/3,na.rm=TRUE)) {
+        "green"
+    } else if(moyenne_score <quantile(df_total$moyenne_score,1/3,na.rm=TRUE) ) {
+        "red"
+    } else {
+        "orange"
+  }} })
+}
+
+#### icon de visualisation 
+icons <- awesomeIcons(
+  icon = 'location-pin',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(df_total)
+)
+
+### carte leaflet
+leaflet(data = df_total) %>% addTiles() %>%
+  addAwesomeMarkers(~longitude, ~latitude, icon=icons,popup =~ paste(paste("<u>",nom,"</u>",sep=""),
+                           paste("Nombre de notes en 2014",as.character(df_total$nb_notes),sep=' : '),
+                           paste("Note minimal",as.character(df_total$note_minimal),sep=' : '),
+                           paste("Note moyenne",as.character(df_total$note_moyenne),sep=' : '),
+                           paste("Note maximal",as.character(df_total$note_maximal),sep=' : '),
+                           sep="<br/>"),
+    popupOptions = popupOptions(maxWidth = 200, closeOnClick = TRUE))
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Travail demandé
+
+La base NYfood contient des informations relatives à des restaurants de New-York. Pour ce troisième exercice, vous êtes libres de visualiser les données contenues dans cette base comme bon vous semble.
+
+### Explication de la carte
+
+Pour cette carte, nous avons choisi de représenter les boulangeries de la base de données NYfood qui ont reçu une note durant l'année 2014. Chaque boulangerie est visible par un icon colorié en fonction des notes obtenues, rouge pour les moins bons, orange pour les moyens et vert pour les meilleures notes. Nous avons ajouté des pop-ups précisant pour chaque boulangerie le nombre de notes attribuées avec la note minimale, moyenne et maximale.
+
