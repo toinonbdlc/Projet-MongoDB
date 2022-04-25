@@ -1,21 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  6 22:03:38 2022
-
-@author: toino
-"""
-
+import matplotlib.pyplot as plt
+import numpy as np
 from pymongo import MongoClient, DESCENDING
 from pprint import pprint
-from sqlalchemy import true
 import networkx as nx
-#from bokeh.plotting import figure, show, output_file
 
 db_uri = "mongodb+srv://etudiant:ur2@clusterm1.0rm7t.mongodb.net/"
 client = MongoClient(db_uri,tls=True,tlsAllowInvalidCertificates=True)
 db = client["publications"]
 
 # 2.2 Réseau de publications scientifiques
+
+
+#####################   REQUETE    #######################
 
 donnees = db.hal_irisa_2021.aggregate([
     
@@ -39,9 +35,10 @@ donnees = db.hal_irisa_2021.aggregate([
 
 #print(donnees)
 
+############### MANIPULATIONS PYTHON #################
+
 # Création d'une liste avec les noms et une liste avec les titres
-noms = []
-titres = []
+
 dico = {}
 dico2 = {}
 for obj in donnees:
@@ -61,11 +58,13 @@ for auteur1 in dico.keys():
             paires.append((auteur1,auteur2)) 
 #print(paires)
 
+
 # Ajouter une couleur pour le nombre de publications
+
 liste_nb = []
-for nb1 in dico2.values(): 
-    if nb1 not in liste_nb: 
-        liste_nb.append(nb1)
+for nb in dico2.values(): 
+    if nb not in liste_nb: 
+        liste_nb.append(nb)
 print(liste_nb)
 
 # Creation d'un dictionnaire de couleur : 
@@ -116,6 +115,9 @@ for (auteur1, auteur2, poids) in tuple_lien:
 #print(liste_poids)  
 #print(liste_tuple_lien_propre[:10])
 
+
+########################## CREATION DU GRAPHE ########################
+
 G = nx.Graph()
 
 # Ajout des noeuds, des liens et de leurs poids
@@ -134,3 +136,4 @@ for node  in G:
 #print(list(G.nodes))
 
 nx.draw(G, node_color = color_map, with_labels = True)
+
