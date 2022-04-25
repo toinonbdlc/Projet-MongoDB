@@ -1,0 +1,136 @@
+---
+title: "Centres de vaccination Covid19"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+
+############# Script R
+
+library("mongolite")
+library("leaflet")
+
+url="mongodb://etudiant:ur2@clusterm1-shard-00-00.0rm7t.mongodb.net:27017,clusterm1-shard-00-01.0rm7t.mongodb.net:27017,clusterm1-shard-00-02.0rm7t.mongodb.net:27017/?ssl=true&replicaSet=atlas-l4xi61-shard-0"
+
+mdb = mongo(collection="dump_Jan2022", db="doctolib",
+            url=url,
+            verbose=TRUE)
+#print(mdb$find())
+
+q='[
+  {"$geoNear" : {
+      "near": {"type": "Point", "coordinates": [-1.6777926, 48.117266]},
+      "distanceField": "distance",
+      "maxDistance": 50000
+  }},
+{"$unwind":"$visit_motives"},
+{"$unwind":"$visit_motives.slots"},
+{"$match": {"visit_motives.slots":{"$gte":{"$date":"2022-01-26T00:00:00Z"},"$lte":{"$date":"2022-01-29T00:00:00Z"}}}},
+{"$group": {"_id": "$name",
+            "loc" : {"$addToSet":"$location.coordinates"},
+            "url" : {"$addToSet":"$url_doctolib"},
+            "nb" : {"$sum":1}
+            }}            
+  ]'
+
+centre_covid = mdb$aggregate(q)
+
+longitude = c()
+latitude = c()
+for (i in (1:7)){
+  longitude = c(longitude,centre_covid$loc[[i]][,1])
+  latitude = c(latitude,centre_covid$loc[[i]][,2])
+}
+centre_covid = cbind(centre_covid,longitude,latitude) 
+
+centre_covid$longitude=as.numeric(centre_covid$longitude)
+centre_covid$latitude=as.numeric(centre_covid$latitude)
+
+
+
+
+###### Requête bonus
+req_bonus='[
+  {"$geoNear" : {
+    "near": {"type": "Point", "coordinates": [-1.6777926, 48.117266]},
+    "distanceField": "distance",
+    "maxDistance": 50000
+  }},
+  {"$unwind":"$visit_motives"},
+  {"$unwind":"$visit_motives.slots"},
+  {"$match" :{"visit_motives.name": {"$regex": "^1re injection", "$options":"i"},"visit_motives.slots":{"$gte": {"$date":"2022-01-01T00:00:00Z"}, "$lt": {"$date":"2022-06-01T00:00:00Z"}}}},
+  {"$group": {"_id": "$name",
+    "loc" : {"$addToSet":"$location.coordinates"},
+    "url" : {"$addToSet":"$url_doctolib"},
+    "nb" : {"$sum":1}
+  }}            
+]'
+
+centre_covid_1ere_inj=mdb$aggregate(req_bonus)
+    
+longitude_1 = c()
+latitude_1 = c()
+for (i in (1:7)){
+  longitude_1 = c(longitude_1,centre_covid_1ere_inj$loc[[i]][,1])
+  latitude_1 = c(latitude_1,centre_covid_1ere_inj$loc[[i]][,2])
+}
+centre_covid_1ere_inj = cbind(centre_covid,longitude_1,latitude_1) 
+
+centre_covid_1ere_inj$longitude_1=as.numeric(centre_covid_1ere_inj$longitude_1)
+centre_covid_1ere_inj$latitude_1=as.numeric(centre_covid_1ere_inj$latitude_1)
+
+
+```
+
+Column {data-width=650} {.tabset}
+-----------------------------------------------------------------------
+
+### Graphique de toutes les injections
+
+```{r}
+# Ajouter un popup qui permet de connaitre le nombre de vÃ©los disponibles (Ã©lectriques+mÃ©canique)+
+#nom station 
+ColorPal <- colorQuantile(c("red","orange","green"), centre_covid$nb, n = 3)
+content2 <- paste(sep = "<br/>",
+                  centre_covid$`_id`,
+                  paste("nombre de crÃ©neaux de vaccination ouverts : ", centre_covid$`nb`))
+m1 <- leaflet(data=centre_covid) %>% 
+  addTiles() %>% 
+  addCircles(~longitude, ~latitude, popup = ~as.character(content2), weight = 1,fillOpacity = 1,radius = 2000,color = ~ColorPal(nb))
+m1
+```
+
+### Graphique des 1ere injections (BONUS)
+```{r}
+# Ajouter un popup qui permet de connaitre le nombre de vÃ©los disponibles (Ã©lectriques+mÃ©canique)+
+#nom station 
+ColorPal <- colorQuantile(c("red","orange","green"), centre_covid_1ere_inj$nb, n = 3)
+content2 <- paste(sep = "<br/>",
+                  centre_covid_1ere_inj$`_id`,
+                  paste("nombre de crÃ©neaux de vaccination ouverts : ", centre_covid_1ere_inj$`nb`))
+m2 <- leaflet(data=centre_covid_1ere_inj) %>% 
+  addTiles() %>% 
+  addCircles(~longitude_1, ~latitude_1, popup = ~as.character(content2), weight = 1,fillOpacity = 1,radius = 2000,color = ~ColorPal(nb))
+m2
+```
+
+
+Column {data-width=350} 
+-----------------------------------------------------------------------
+
+### Travail demandé
+
+La base doctolib contient des informations (récupérées en janvier 2022) relatives aux centres de vaccination contre la Covid19 en Bretagne. Vous devrez pour cette première visualisation générer une carte des centres de vaccination situés à moins de 50km de Rennes. L’icône associée à chaque centre sera de couleur rouge, orange ou vert selon le nombre de créneaux de vaccination ouverts sur la période du 26 au 29 janvier 2022 (inclus).
+
+Exemple de bonus. Vous pourrez ajouter une seconde visualisation qui se concentrera sur les vaccinations pour première dose (voire même, vous pourrez ajouter un bouton qui bascule d’une visualisation à l’aure lorsque l’utilisateur clique dessus). Mise à jour : Pour ce bonus, vous vous concentrerez sur la période 1er janvier - 1er juin au lieu de la période citée plus haut.
+
+
+### Explication du graphique
+
+Cette carte représente par un rond de couleur les lieux de vaccination contre le Covid 19 situé à moins de 50 Km de Rennes. La couleur de rond signifie le nombre de créneaux ouvert entre le 26 et le 29 janvier 2022. Des pop-ups ont été ajouté indiquant pour chaque centre son nom et le nombre de places disponibles.
+La deuxième carte bonus, est très similaire à la deuxième, les seuls changements sont les dates de 1er janvier au 1er juin et les vaccins sont seulement des premières injections.
